@@ -1,6 +1,6 @@
 cask "tzexpand" do
   version "0.1.0"
-  sha256 :no_check # replaced by release CI to the real sha256 of the zip asset
+  sha256 "4d0278f4d18c28fcf86719043a5dc7c9329afd99dbb55b6524d498c2eebeb1d4"
 
   url "https://github.com/ferniethedev/homebrew-tzexpand/releases/download/v#{version}/TZExpand-#{version}.zip"
   name "TZExpand"
