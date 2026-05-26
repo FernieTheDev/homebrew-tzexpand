@@ -4,15 +4,12 @@ import TZExpandCore
 
 /// Glue: hotkey → grow selection until it parses → expand → paste.
 enum Trigger {
-    /// Maximum number of word-extensions to attempt when growing the
-    /// selection. 4 covers "let's meet at 9 pm PT" comfortably.
     private static let maxExtensions = 4
 
     static func run() {
-        // If AX is revoked (extremely common after `brew upgrade` of ad-hoc
-        // signed builds — TCC keys on CDHash, which changes every release)
-        // we cannot read selections or post key events. Tell the user
-        // loudly instead of silently beeping into the void.
+        // Ad-hoc signed apps lose their TCC Accessibility grant every release
+        // (TCC keys on CDHash). Surface this loudly instead of silently
+        // beeping into the void after each `brew upgrade`.
         guard AXIsProcessTrusted() else {
             DispatchQueue.main.async { AccessibilityAlert.show() }
             return
