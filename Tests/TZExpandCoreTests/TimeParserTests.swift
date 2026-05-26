@@ -53,6 +53,31 @@ struct TimeParserTests {
         #expect(TimeParser.parse("12:00am")?.hour == 0)
     }
     @Test func twelve_pm_is_noon() { #expect(TimeParser.parse("12pm")?.hour == 12) }
+    @Test func parses_bare_hour() {
+        let p = TimeParser.parse("9")
+        #expect(p?.hour == 9)
+        #expect(p?.minute == 0)
+        #expect(p?.sourceTimeZone == nil)
+    }
+
+    @Test func parses_bare_hour_colon_minutes() {
+        let p = TimeParser.parse("9:00")
+        #expect(p?.hour == 9)
+        #expect(p?.minute == 0)
+    }
+
+    @Test func parses_9pm_PT() {
+        let p = TimeParser.parse("9pm PT")
+        #expect(p?.hour == 21)
+        #expect(p?.sourceTimeZone?.identifier == "America/Los_Angeles")
+    }
+
+    @Test func parses_9_space_pm_PT() {
+        let p = TimeParser.parse("9 pm PT")
+        #expect(p?.hour == 21)
+        #expect(p?.sourceTimeZone?.identifier == "America/Los_Angeles")
+    }
+
     @Test func rejects_garbage() {
         #expect(TimeParser.parse("hello") == nil)
         #expect(TimeParser.parse("") == nil)

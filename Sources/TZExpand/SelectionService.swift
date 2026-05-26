@@ -2,15 +2,10 @@ import AppKit
 import ApplicationServices
 
 /// Reads the currently selected text in the frontmost application via the
-/// Accessibility API. Falls back to selecting the previous word (via a
-/// synthesized ⌥⇧← + ⌘C round-trip) when no selection exists.
+/// Accessibility API. Provides a primitive to extend the selection by one
+/// word backwards (via synthesized ⌥⇧←) so callers can grow the capture
+/// window until it parses.
 enum SelectionService {
-    enum Failure: Error {
-        case noFocusedElement
-        case noSelection
-        case axNotAuthorized
-    }
-
     /// Returns the currently selected text via AX, or nil if there is none.
     static func currentSelection() -> String? {
         guard AXIsProcessTrusted() else { return nil }
@@ -32,22 +27,12 @@ enum SelectionService {
         return str
     }
 
-    /// Fallback: selects the previous "word" using ⌥⇧← so the next AX read
-    /// returns it. Caller is responsible for collapsing the selection afterwards
-    /// (the paste action naturally replaces it).
-    static func selectPreviousWord() {
-        synthesize(keyCode: 0x7B, // left arrow
+    /// Extends the current selection (or starts one from the cursor) by one
+    /// word to the left via ⌥⇧←. Caller should `Thread.sleep` briefly after
+    /// to let the focused app update its selection before re-reading.
+    static func extendSelectionLeftByWord() {
+        synthesize(keyCode: 0x7B /* left arrow */,
                    modifiers: [.maskAlternate, .maskShift])
-    }
-
-    /// Captures whatever is currently selected (or selects the previous word
-    /// first if nothing is selected), returning the captured string.
-    static func captureSelectionOrPreviousWord() -> String? {
-        if let s = currentSelection() { return s }
-        selectPreviousWord()
-        // Give the focused app a beat to update its selection.
-        Thread.sleep(forTimeInterval: 0.05)
-        return currentSelection()
     }
 
     private static func synthesize(keyCode: CGKeyCode, modifiers: CGEventFlags) {
