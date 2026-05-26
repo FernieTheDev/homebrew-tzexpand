@@ -21,6 +21,7 @@ struct TZExpandGUIApp: App {
 
     var body: some Scene {
         MenuBarExtra("TZ", systemImage: "clock.badge") {
+            MenuStatusView()
             Button("Expand selection now (⌃⌥T)") {
                 Trigger.run()
             }
@@ -32,6 +33,17 @@ struct TZExpandGUIApp: App {
             Button("Grant Accessibility access…") {
                 let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility")!
                 NSWorkspace.shared.open(url)
+            }
+            Button("Reset Accessibility prompt (for re-granting)") {
+                // Best-effort: tccutil reset on this bundle clears the entry
+                // so the next AXIsProcessTrustedWithOptions prompt re-appears.
+                let p = Process()
+                p.launchPath = "/usr/bin/tccutil"
+                p.arguments = ["reset", "Accessibility", "dev.fernie.tzexpand"]
+                try? p.run()
+                p.waitUntilExit()
+                let opts = [kAXTrustedCheckOptionPrompt.takeUnretainedValue() as String: true] as CFDictionary
+                _ = AXIsProcessTrustedWithOptions(opts)
             }
             Divider()
             Button("Quit") { NSApp.terminate(nil) }
