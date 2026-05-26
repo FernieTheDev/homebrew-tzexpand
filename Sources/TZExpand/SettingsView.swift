@@ -15,7 +15,7 @@ struct SettingsView: View {
                 Picker("Home", selection: $homeTZ) {
                     ForEach(allTimeZones, id: \.self) { Text($0).tag($0) }
                 }
-                .onChange(of: homeTZ) { new in
+                .onChange(of: homeTZ) { _, new in
                     if let tz = TimeZone(identifier: new) {
                         Preferences.shared.homeTimeZone = tz
                     }
