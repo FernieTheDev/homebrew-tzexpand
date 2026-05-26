@@ -3,7 +3,7 @@ import PackageDescription
 
 let package = Package(
     name: "TZExpand",
-    platforms: [.macOS(.v13)],
+    platforms: [.macOS(.v14)],
     products: [
         .executable(name: "TZExpand", targets: ["TZExpand"]),
         .library(name: "TZExpandCore", targets: ["TZExpandCore"]),
