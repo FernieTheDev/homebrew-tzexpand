@@ -11,6 +11,20 @@ You can also include a timezone in the input and it'll be used as the source:
 
 ## Install
 
+There are two ways to install — pick the one you prefer:
+
+### Option A: Hammerspoon spoon (recommended — works reliably in Slack/Electron/web apps)
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/FernieTheDev/homebrew-tzexpand/main/scripts/install-spoon.sh | bash
+```
+
+This installs [Hammerspoon](https://www.hammerspoon.org) (via brew if available), drops the spoon into `~/.hammerspoon/Spoons/TZExpand.spoon/`, and adds a bootstrap snippet to `~/.hammerspoon/init.lua`. Grant Accessibility to **Hammerspoon** once and you're done — no per-update re-grant.
+
+Edit `~/.hammerspoon/init.lua` to change your home timezone, extras, or hotkey, then `hs.reload()` from the Hammerspoon console.
+
+### Option B: Standalone menu-bar app (Homebrew cask)
+
 ```sh
 brew install ferniethedev/tzexpand/tzexpand
 ```
@@ -20,7 +34,8 @@ brew install ferniethedev/tzexpand/tzexpand
 
 After the first launch, macOS will prompt for Accessibility access. Open
 **System Settings → Privacy & Security → Accessibility** and enable
-**TZExpand**.
+**TZExpand**. Note: because the app is ad-hoc signed, you'll need to re-grant
+Accessibility on every `brew upgrade`. If that bothers you, use Option A.
 
 ## Usage
 
