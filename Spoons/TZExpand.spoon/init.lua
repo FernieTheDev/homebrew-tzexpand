@@ -40,6 +40,7 @@ local TZ_LABEL = {
     ["Europe/Berlin"]       = "CET",
     ["Europe/Paris"]        = "CET",
     ["Europe/Madrid"]       = "CET",
+    ["Europe/Amsterdam"]    = "CET",
     ["Asia/Tokyo"]          = "JST",
     ["Asia/Shanghai"]       = "CST",
     ["Asia/Kolkata"]        = "IST",
@@ -293,7 +294,7 @@ end
 local POPULAR_TZS = {
     "America/Los_Angeles", "America/Denver", "America/Chicago", "America/New_York",
     "America/Toronto", "America/Mexico_City", "America/Sao_Paulo",
-    "Europe/London", "Europe/Berlin", "Europe/Paris", "Europe/Madrid", "Europe/Athens",
+    "Europe/London", "Europe/Amsterdam", "Europe/Berlin", "Europe/Paris", "Europe/Madrid", "Europe/Athens",
     "UTC", "GMT",
     "Asia/Dubai", "Asia/Jerusalem", "Asia/Kolkata", "Asia/Singapore", "Asia/Shanghai", "Asia/Tokyo",
     "Australia/Sydney", "Pacific/Auckland", "Pacific/Honolulu",
