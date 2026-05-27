@@ -43,6 +43,7 @@ local TZ_LABEL = {
     ["Asia/Tokyo"]          = "JST",
     ["Asia/Shanghai"]       = "CST",
     ["Asia/Kolkata"]        = "IST",
+    ["Asia/Jerusalem"]      = "IL",
     ["Australia/Sydney"]    = "AET",
 }
 
@@ -58,6 +59,7 @@ local LABEL_TZ = {
     CET = "Europe/Berlin",      CEST = "Europe/Berlin",
     JST = "Asia/Tokyo",
     IST = "Asia/Kolkata",
+    IL  = "Asia/Jerusalem",    IDT = "Asia/Jerusalem",
 }
 
 local function labelFor(tz) return TZ_LABEL[tz] or tz end
@@ -293,7 +295,7 @@ local POPULAR_TZS = {
     "America/Toronto", "America/Mexico_City", "America/Sao_Paulo",
     "Europe/London", "Europe/Berlin", "Europe/Paris", "Europe/Madrid", "Europe/Athens",
     "UTC", "GMT",
-    "Asia/Dubai", "Asia/Kolkata", "Asia/Singapore", "Asia/Shanghai", "Asia/Tokyo",
+    "Asia/Dubai", "Asia/Jerusalem", "Asia/Kolkata", "Asia/Singapore", "Asia/Shanghai", "Asia/Tokyo",
     "Australia/Sydney", "Pacific/Auckland", "Pacific/Honolulu",
 }
 
