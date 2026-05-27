@@ -1,108 +1,111 @@
 # TZExpand
 
-A tiny macOS menu bar app that turns a time you just typed (anywhere — Slack,
-email, Notes, browser) into a multi-timezone expansion with a single hotkey.
+A hotkey-driven multi-timezone expander for macOS, distributed as a
+[Hammerspoon](https://www.hammerspoon.org) [Spoon](https://www.hammerspoon.org/Spoons/).
 
-> Type `3pm`, hit **⌃⌥T** → `3pm PT (6pm ET / 11pm GMT)`
+Type a time anywhere — Slack, email, Notes, your browser — hit the hotkey, and
+the time is replaced with the full multi-timezone expansion.
 
-You can also include a timezone in the input and it'll be used as the source:
+> `3pm` → ⌃⌥T → `3pm PT (6pm ET / 11pm UK)`
+>
+> `9 pm ET` → ⌃⌥T → `9pm ET (6pm PT / 2am UK)`
 
-> `6pm ET` → `6pm ET (3pm PT / 11pm GMT)`
+It understands all of these input shapes:
+
+- `9`, `9:00`, `21:30`
+- `9pm`, `9 pm`, `9:30 pm`
+- `9pm PT`, `9 pm ET`, `3pm BST` (typed tz becomes the source; your home tz is added to the parenthetical)
+
+UK / Europe / US zones respect DST automatically.
 
 ## Install
 
-There are two ways to install — pick the one you prefer:
-
-### Option A: Hammerspoon spoon (recommended — works reliably in Slack/Electron/web apps)
+One-liner:
 
 ```sh
-curl -fsSL https://raw.githubusercontent.com/FernieTheDev/homebrew-tzexpand/main/scripts/install-spoon.sh | bash
+curl -fsSL https://raw.githubusercontent.com/FernieTheDev/tzexpand/main/scripts/install-spoon.sh | bash
 ```
 
-This installs [Hammerspoon](https://www.hammerspoon.org) (via brew if available), drops the spoon into `~/.hammerspoon/Spoons/TZExpand.spoon/`, and adds a bootstrap snippet to `~/.hammerspoon/init.lua`. Grant Accessibility to **Hammerspoon** once and you're done — no per-update re-grant.
+The installer will:
 
-Edit `~/.hammerspoon/init.lua` to change your home timezone, extras, or hotkey, then `hs.reload()` from the Hammerspoon console.
+1. Install [Hammerspoon](https://www.hammerspoon.org) via Homebrew if it isn't already (`brew install --cask hammerspoon`)
+2. Drop the spoon into `~/.hammerspoon/Spoons/TZExpand.spoon/`
+3. Append a small bootstrap snippet to `~/.hammerspoon/init.lua`
+4. Reload (or launch) Hammerspoon
 
-### Option B: Standalone menu-bar app (Homebrew cask)
+**One-time manual step:** grant Hammerspoon Accessibility access at
+**System Settings → Privacy & Security → Accessibility** (enable
+*Hammerspoon*). Because the permission lives on Hammerspoon, future spoon
+updates don't require re-granting.
 
-```sh
-brew install ferniethedev/tzexpand/tzexpand
-```
-
-> Heads up: the GitHub repo for this tap is `homebrew-tzexpand` (Homebrew
-> requires the `homebrew-` prefix); the install URL drops the prefix.
-
-After the first launch, macOS will prompt for Accessibility access. Open
-**System Settings → Privacy & Security → Accessibility** and enable
-**TZExpand**. Note: because the app is ad-hoc signed, you'll need to re-grant
-Accessibility on every `brew upgrade`. If that bothers you, use Option A.
-
-## Usage
+## Use
 
 1. Type a time in any text field. Examples that work:
-   `3pm`, `3:00pm`, `3 pm`, `3:00 pm`, `3pm PT`, `3:00pm PT`, `3 pm PT`,
-   `15:00`, `15:30 CET`, `noon`, `midnight`.
+   `3pm`, `3:00pm`, `3 pm`, `3:00 pm`, `3pm PT`, `3 pm ET`, `15:00`, `15:30 CET`, `21:30`.
 2. Either select the time, or just press the hotkey right after typing it —
-   the app will grab the previous word.
+   the spoon grows the selection backward by up to 4 words until it finds a parseable time.
 3. Press **⌃⌥T**. The text is replaced with the full expansion.
-
-If a timezone is present in your input it overrides the home TZ as the
-source, and your home TZ is automatically added to the parenthetical list.
 
 ## Configure
 
-Click the menu bar icon → **Settings…** to choose:
+Click the **🕘** in your menu bar:
 
-- Your **home timezone**.
-- **Additional timezones** displayed in the parentheses, in order.
-- The **separator** between extra zones (default ` / `).
+- **Change home timezone…** — searchable list of common IANA zones
+- **Add / remove / reorder extras** — each extra has a submenu
+- **Test expand…** — try an input string in a dialog
+- **Edit `~/.hammerspoon/init.lua`** / **Reload Hammerspoon** — for power users
 
-The hotkey defaults to **⌃⌥T**. A graphical recorder is on the roadmap;
-override it for now via UserDefaults:
+Settings persist via `hs.settings`, so menu-bar edits survive Hammerspoon reloads
+and override the defaults in `init.lua`.
 
-```sh
-defaults write dev.fernie.tzexpand TZExpand.hotkey.keyCode -int 17     # 'T'
-defaults write dev.fernie.tzexpand TZExpand.hotkey.modifiers -int 6144 # ⌃⌥
+To change the hotkey, edit the call in `~/.hammerspoon/init.lua`:
+
+```lua
+spoon.TZExpand:start({
+    home = "America/Los_Angeles",
+    extras = { "America/New_York", "Europe/London" },
+    hotkey = { mods = {"ctrl", "alt"}, key = "t" }, -- ← here
+})
 ```
 
-## Headless / CLI
+…then run `hs.reload()` from the Hammerspoon console.
 
-The same binary works as a CLI when given arguments:
-
-```sh
-swift run TZExpand "3pm PT"
-# → 3pm PT (6pm ET / 11pm GMT)
-```
-
-## Build from source
+## Manual install (no installer script)
 
 ```sh
-git clone https://github.com/ferniethedev/homebrew-tzexpand.git
-cd homebrew-tzexpand
-VERSION=0.1.0 bash scripts/build-release.sh
-open build/dist/TZExpand.app
+brew install --cask hammerspoon
+mkdir -p ~/.hammerspoon/Spoons
+curl -fsSL https://raw.githubusercontent.com/FernieTheDev/tzexpand/main/Spoons/TZExpand.spoon/init.lua \
+    -o ~/.hammerspoon/Spoons/TZExpand.spoon/init.lua
 ```
 
-## How it works
+Then add to `~/.hammerspoon/init.lua`:
 
-- Hotkey → `Carbon RegisterEventHotKey` (truly global).
-- Selection capture → Accessibility API, with a `⌥⇧←` fallback to grab the
-  previous word when nothing is selected.
-- Parsing → tolerant pure-Swift parser (see `Sources/TZExpandCore/TimeParser.swift`).
-- Formatting → `DateFormatter` + `TimeZone` with a curated abbreviation map.
-- Paste back → snapshot pasteboard, write expansion, synthesize ⌘V, restore
-  pasteboard ~0.4s later.
-
-## Caveat: ad-hoc signing
-
-Until a paid Apple Developer ID is wired up, releases are ad-hoc signed.
-The Homebrew cask strips the quarantine xattr post-install. If you download
-the zip manually, do the same:
-
-```sh
-xattr -dr com.apple.quarantine /Applications/TZExpand.app
+```lua
+hs.loadSpoon("TZExpand")
+spoon.TZExpand:start({
+    home = "America/Los_Angeles",
+    extras = { "America/New_York", "Europe/London" },
+    hotkey = { mods = {"ctrl", "alt"}, key = "t" },
+})
 ```
+
+## Why Hammerspoon?
+
+Earlier versions shipped as a standalone Swift menu-bar app (Homebrew cask).
+That worked but had two ongoing pains:
+
+- **TCC revoked Accessibility on every `brew upgrade`** (the binary is ad-hoc
+  signed, so the CDHash changes on each release and macOS forgets the grant).
+- **Paste was flaky in Electron apps** (Slack, Discord) and inside web inputs
+  where AX selection writes are not honored.
+
+Hammerspoon solves both:
+
+- One Accessibility grant on Hammerspoon itself, forever.
+- `hs.eventtap` + `hs.pasteboard` work reliably in Electron and the web.
+- Iteration is `hs.reload()` (≈1 s) instead of rebuild → sign → upgrade → re-grant.
 
 ## License
 
-MIT — see `LICENSE`.
+MIT — see [LICENSE](LICENSE).

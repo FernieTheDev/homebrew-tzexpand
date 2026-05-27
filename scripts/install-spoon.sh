@@ -9,7 +9,7 @@
 
 set -euo pipefail
 
-REPO_RAW="https://raw.githubusercontent.com/FernieTheDev/homebrew-tzexpand/main"
+REPO_RAW="https://raw.githubusercontent.com/FernieTheDev/tzexpand/main"
 SPOON_DIR="$HOME/.hammerspoon/Spoons/TZExpand.spoon"
 INIT_LUA="$HOME/.hammerspoon/init.lua"
 
