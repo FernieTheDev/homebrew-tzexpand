@@ -7,6 +7,8 @@ enum Trigger {
     private static let maxExtensions = 4
 
     static func run() {
+        // If AX is revoked, silently no-op (beep). The menu bar status row
+        // is the user's signal to re-grant — no popups.
         guard AXIsProcessTrusted() else {
             NSSound.beep()
             return
@@ -19,38 +21,23 @@ enum Trigger {
             separator: prefs.separator
         )
 
-        if let s = readSelection(), let parsed = TimeParser.parse(s) {
-            NSLog("TZExpand: parsed initial selection '\(s)'")
+        if let s = SelectionService.currentSelection(),
+           let parsed = TimeParser.parse(s) {
             PasteService.paste(Expander.expand(parsed, config: cfg))
             return
         }
 
-        for i in 0..<maxExtensions {
+        for _ in 0..<maxExtensions {
             SelectionService.extendSelectionLeftByWord()
             Thread.sleep(forTimeInterval: 0.05)
-            guard let s = readSelection() else {
-                NSLog("TZExpand: extension \(i+1) read returned nil")
-                continue
-            }
-            NSLog("TZExpand: extension \(i+1) selection='\(s)'")
+            guard let s = SelectionService.currentSelection() else { continue }
             if let parsed = TimeParser.parse(s) {
                 PasteService.paste(Expander.expand(parsed, config: cfg))
                 return
             }
         }
 
-        NSLog("TZExpand: no parse after \(maxExtensions) extensions")
         NSSound.beep()
-    }
-
-    /// Returns the current selection. Tries AX first (silent, no clipboard
-    /// disturbance), then falls back to ⌘C read for web content / Electron
-    /// apps that don't expose AXSelectedText.
-    private static func readSelection() -> String? {
-        if let s = SelectionService.currentSelection(), !s.isEmpty {
-            return s
-        }
-        return ClipboardCopyService.copyCurrentSelection()
     }
 }
 
