@@ -46,10 +46,13 @@ if [ ! -f "$INIT_LUA" ] || ! grep -q "spoon.TZExpand" "$INIT_LUA"; then
   cat >> "$INIT_LUA" <<'LUA'
 
 -- TZExpand: hotkey-driven timezone expander
+-- Configure via the 🕘 menu bar item (settings persist across reloads).
 hs.loadSpoon("TZExpand")
-spoon.TZExpand:setHome("America/Los_Angeles")        -- your home tz
-spoon.TZExpand:setExtras({"America/New_York", "GMT"}) -- extras to show
-spoon.TZExpand:bindHotkey({"ctrl", "alt"}, "t")
+spoon.TZExpand:start({
+    home = "America/Los_Angeles",              -- your home tz (first run only; menubar overrides)
+    extras = { "America/New_York", "Europe/London" }, -- defaults
+    hotkey = { mods = {"ctrl", "alt"}, key = "t" },
+})
 LUA
 else
   say "init.lua already references TZExpand — leaving it alone."

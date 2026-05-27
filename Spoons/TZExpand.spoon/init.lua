@@ -34,7 +34,7 @@ local TZ_LABEL = {
     ["America/Chicago"]     = "CT",
     ["America/New_York"]    = "ET",
     ["America/Toronto"]     = "ET",
-    ["Europe/London"]       = "GMT",
+    ["Europe/London"]       = "UK",
     ["GMT"]                 = "GMT",
     ["UTC"]                 = "UTC",
     ["Europe/Berlin"]       = "CET",
@@ -47,12 +47,14 @@ local TZ_LABEL = {
 }
 
 -- Inverse map (abbrev → canonical IANA) used when the user types "9pm PT".
+-- Note: "GMT"/"BST" both map to Europe/London so they respect DST.
 local LABEL_TZ = {
     PT = "America/Los_Angeles", PST = "America/Los_Angeles", PDT = "America/Los_Angeles",
     MT = "America/Denver",      MST = "America/Denver",      MDT = "America/Denver",
     CT = "America/Chicago",     CST = "America/Chicago",     CDT = "America/Chicago",
     ET = "America/New_York",    EST = "America/New_York",    EDT = "America/New_York",
-    GMT = "GMT", UTC = "UTC",
+    UK = "Europe/London",       GMT = "Europe/London",       BST = "Europe/London",
+    UTC = "UTC",
     CET = "Europe/Berlin",      CEST = "Europe/Berlin",
     JST = "Asia/Tokyo",
     IST = "Asia/Kolkata",
@@ -227,6 +229,19 @@ function obj:setHome(tz) self.home = tz; return self end
 function obj:setExtras(tzs) self.extras = tzs; return self end
 function obj:setSeparator(sep) self.separator = sep; return self end
 
+-- Convenience: load settings, bind hotkey, start menubar in one call.
+-- Settings persisted via the menubar override values from init.lua.
+function obj:start(opts)
+    opts = opts or {}
+    if opts.home then self.home = opts.home end
+    if opts.extras then self.extras = opts.extras end
+    if opts.separator then self.separator = opts.separator end
+    self:loadSettings()
+    if opts.hotkey then self:bindHotkey(opts.hotkey.mods or {"ctrl","alt"}, opts.hotkey.key or "t") end
+    self:startMenuBar()
+    return self
+end
+
 function obj:trigger()
     -- Try existing selection first.
     local sel = captureSelection(0)
@@ -248,6 +263,125 @@ end
 function obj:bindHotkey(mods, key)
     if self._hk then self._hk:delete() end
     self._hk = hs.hotkey.bind(mods, key, function() self:trigger() end)
+    return self
+end
+
+-- ----------------------------------------------------------------------------
+-- Settings persistence + menubar UI
+-- ----------------------------------------------------------------------------
+
+local SETTINGS_KEY = "TZExpandSpoonSettings"
+
+function obj:loadSettings()
+    local s = hs.settings.get(SETTINGS_KEY)
+    if type(s) ~= "table" then return self end
+    if s.home   then self.home   = s.home end
+    if s.extras then self.extras = s.extras end
+    if s.separator then self.separator = s.separator end
+    return self
+end
+
+function obj:saveSettings()
+    hs.settings.set(SETTINGS_KEY, {
+        home = self.home, extras = self.extras, separator = self.separator,
+    })
+    return self
+end
+
+local POPULAR_TZS = {
+    "America/Los_Angeles", "America/Denver", "America/Chicago", "America/New_York",
+    "America/Toronto", "America/Mexico_City", "America/Sao_Paulo",
+    "Europe/London", "Europe/Berlin", "Europe/Paris", "Europe/Madrid", "Europe/Athens",
+    "UTC", "GMT",
+    "Asia/Dubai", "Asia/Kolkata", "Asia/Singapore", "Asia/Shanghai", "Asia/Tokyo",
+    "Australia/Sydney", "Pacific/Auckland", "Pacific/Honolulu",
+}
+
+local function tzChoices(exclude)
+    local out, seen = {}, {}
+    if exclude then for _, e in ipairs(exclude) do seen[e] = true end end
+    for _, tz in ipairs(POPULAR_TZS) do
+        if not seen[tz] then
+            table.insert(out, { text = tz, subText = "label: " .. (TZ_LABEL[tz] or tz) })
+        end
+    end
+    return out
+end
+
+local function pickTimezone(prompt, exclude, onPick)
+    local chooser = hs.chooser.new(function(choice)
+        if choice then onPick(choice.text) end
+    end)
+    chooser:placeholderText(prompt)
+    chooser:choices(tzChoices(exclude))
+    chooser:searchSubText(true)
+    chooser:show()
+end
+
+local function buildMenu(self)
+    local items = {}
+    table.insert(items, { title = "Home: " .. self.home .. " (" .. (TZ_LABEL[self.home] or self.home) .. ")", disabled = true })
+    table.insert(items, { title = "Change home timezone…", fn = function()
+        pickTimezone("Home timezone", nil, function(tz)
+            self.home = tz; self:saveSettings(); hs.alert.show("Home: " .. tz, 1)
+        end)
+    end })
+    table.insert(items, { title = "-" })
+    table.insert(items, { title = "Extra timezones:", disabled = true })
+    for i, tz in ipairs(self.extras) do
+        table.insert(items, {
+            title = "  " .. tz .. " (" .. (TZ_LABEL[tz] or tz) .. ")",
+            menu = {
+                { title = "Remove", fn = function()
+                    table.remove(self.extras, i); self:saveSettings()
+                end },
+                { title = "Move up", disabled = (i == 1), fn = function()
+                    self.extras[i], self.extras[i-1] = self.extras[i-1], self.extras[i]
+                    self:saveSettings()
+                end },
+                { title = "Move down", disabled = (i == #self.extras), fn = function()
+                    self.extras[i], self.extras[i+1] = self.extras[i+1], self.extras[i]
+                    self:saveSettings()
+                end },
+            },
+        })
+    end
+    table.insert(items, { title = "Add extra timezone…", fn = function()
+        local excl = { self.home }
+        for _, t in ipairs(self.extras) do table.insert(excl, t) end
+        pickTimezone("Add timezone", excl, function(tz)
+            table.insert(self.extras, tz); self:saveSettings()
+            hs.alert.show("Added " .. tz, 1)
+        end)
+    end })
+    table.insert(items, { title = "-" })
+    table.insert(items, { title = "Test expand…", fn = function()
+        local btn, txt = hs.dialog.textPrompt("TZExpand test", "Enter a time (e.g., 9pm, 9:30 pm PT):", "9pm", "OK", "Cancel")
+        if btn == "OK" and txt and txt ~= "" then
+            local p = parse(txt)
+            if p then hs.alert.show(expand(self, p), 3)
+            else hs.alert.show("Couldn't parse: " .. txt, 2) end
+        end
+    end })
+    table.insert(items, { title = "Edit ~/.hammerspoon/init.lua", fn = function()
+        hs.execute("open -t ~/.hammerspoon/init.lua")
+    end })
+    table.insert(items, { title = "Reload Hammerspoon", fn = function() hs.reload() end })
+    return items
+end
+
+function obj:startMenuBar()
+    if self._menu then self._menu:delete() end
+    self._menu = hs.menubar.new()
+    if not self._menu then return self end
+    self._menu:setTitle("🕘")
+    self._menu:setTooltip("TZExpand")
+    self._menu:setMenu(function() return buildMenu(self) end)
+    return self
+end
+
+function obj:stopMenuBar()
+    if self._menu then self._menu:delete(); self._menu = nil end
     return self
 end
 
