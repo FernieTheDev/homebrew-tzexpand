@@ -31,8 +31,17 @@ enum SelectionService {
     /// word to the left via ⌥⇧←. Caller should `Thread.sleep` briefly after
     /// to let the focused app update its selection before re-reading.
     static func extendSelectionLeftByWord() {
+        waitForModifierRelease()
         synthesize(keyCode: 0x7B /* left arrow */,
                    modifiers: [.maskAlternate, .maskShift])
+    }
+
+    private static func waitForModifierRelease() {
+        let mask: NSEvent.ModifierFlags = [.command, .control, .option, .shift]
+        for _ in 0..<30 {
+            if NSEvent.modifierFlags.intersection(mask).isEmpty { return }
+            Thread.sleep(forTimeInterval: 0.01)
+        }
     }
 
     private static func synthesize(keyCode: CGKeyCode, modifiers: CGEventFlags) {
