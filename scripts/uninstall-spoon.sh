@@ -151,24 +151,27 @@ fi
 
 # ----- Optionally remove Hammerspoon itself ---------------------------------
 if [ "$MODE" = "all" ]; then
-  if [ "$ASSUME_YES" = 0 ]; then
-    printf "Really uninstall Hammerspoon.app and all of ~/.hammerspoon? [y/N]: "
-    read -r confirm < "${TTY_IN:-/dev/tty}"
-    case "$confirm" in
-      y|Y|yes|YES) ;;
-      *) echo "Keeping Hammerspoon. Done."; exit 0 ;;
-    esac
+  say "Removing Hammerspoon…"
+
+  # Quit Hammerspoon first so brew can uninstall cleanly.
+  if pgrep -x Hammerspoon >/dev/null 2>&1; then
+    say "Quitting Hammerspoon"
+    osascript -e 'tell application "Hammerspoon" to quit' 2>/dev/null || true
+    sleep 1
   fi
 
   if command -v brew >/dev/null 2>&1 && brew list --cask hammerspoon >/dev/null 2>&1; then
-    say "Uninstalling Hammerspoon via Homebrew"
-    brew uninstall --cask hammerspoon || true
+    say "Running: brew uninstall --cask hammerspoon"
+    brew uninstall --cask hammerspoon
   elif [ -d "/Applications/Hammerspoon.app" ]; then
     say "Removing /Applications/Hammerspoon.app"
     rm -rf "/Applications/Hammerspoon.app"
+    ok "Hammerspoon.app removed."
+  else
+    warn "Hammerspoon.app not found in /Applications (already uninstalled?)."
   fi
 
-  # Remove the rest of the user-level Hammerspoon footprint.
+  # Remove user-level Hammerspoon data.
   for path in \
     "$HOME/.hammerspoon" \
     "$HOME/Library/Preferences/org.hammerspoon.Hammerspoon.plist" \
