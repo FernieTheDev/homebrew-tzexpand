@@ -36,8 +36,8 @@ for arg in "$@"; do
 done
 
 if [ -z "$MODE" ]; then
-  if [ ! -t 0 ] && [ ! -t 1 ]; then
-    # Piped from curl with no TTY — try /dev/tty for interactive read.
+  if [ ! -t 0 ]; then
+    # stdin is a pipe (curl|bash) — re-attach to the terminal for interactive read.
     if [ -e /dev/tty ]; then
       exec < /dev/tty
     else
